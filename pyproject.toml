@@ -7,7 +7,9 @@ authors = [
     { name = "CaseyCHannan", email = "hannan.casey@gmail.com" }
 ]
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "yfinance>=1.7.0",
+]
 
 [project.scripts]
 portfolio-risk-engine = "portfolio_risk_engine:main"
