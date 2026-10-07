@@ -12,11 +12,11 @@ import yfinance as yf
 TICKERS = ["SPY", "VEA", "AGG", "AAPL", "JPM", "XOM"]
 
 
-
 def fetch_prices(tickers, start="2015-01-01"):
     """Download daily ADJUSTED prices for a list of specified tickers."""
-    return yf.download(tickers, start=start, auto_adjust=True, progress=False)
-
+    return yf.download(
+        tickers, start=start, auto_adjust=True, progress=False, threads=False
+    )
 
 def main():
     prices = fetch_prices(TICKERS)["Close"]
