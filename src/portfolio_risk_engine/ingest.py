@@ -1,5 +1,35 @@
 import yfinance as yf
-#get 
+import pandas as pd
+import duckdb
+from datetime import date
+
+CREATE_PRICES = """
+CREATE TABLE IF NOT EXISTS prices (
+    date   DATE    NOT NULL,
+    ticker VARCHAR NOT NULL,
+    close  DOUBLE  NOT NULL,
+    PRIMARY KEY (date, ticker)
+)
+"""
+
+def to_long(wide: pd.DataFrame) -> pd.DataFrame:
+    """Reshape wide closes (date x ticker) to long: date, ticker, close."""
+    return (
+        wide.rename_axis(index="date", columns="ticker")
+        .stack()
+        .rename("close")
+        .reset_index()
+    )
+
+DB_PATH = "data/risk.duckdb"
+
+def load_prices(long: pd.DataFrame, db_path: str = DB_PATH) -> None:
+    """Upsert completed trading days into the prices table."""
+    long = long[long["date"] < pd.Timestamp(date.today())]
+    with duckdb.connect(db_path) as con:
+        con.execute(CREATE_PRICES)
+        con.register("incoming", long)
+        con.execute("INSERT OR REPLACE INTO prices SELECT date, ticker, close FROM incoming")
 
 # Basket design: a small, diversified mix across asset classes and sectors.
 #   SPY  - US large-cap equity (market benchmark)
@@ -20,14 +50,10 @@ def fetch_prices(tickers, start="2015-01-01"):
 
 def main():
     prices = fetch_prices(TICKERS)["Close"]
-
     empty = prices.columns[prices.isna().all()].tolist()
     if empty:
         raise RuntimeError(f"No data returned for: {empty}")
-    print(prices.head())
-    print(prices.tail())
-    print(prices.shape)
-    print(prices.isna().sum())
+    load_prices(to_long(prices))
 
 
 if __name__ == "__main__":
