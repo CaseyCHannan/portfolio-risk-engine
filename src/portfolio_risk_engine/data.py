@@ -21,11 +21,10 @@ def read_prices(db_path: str = DB_PATH) -> pl.DataFrame:
 
 
 def add_returns(prices: pl.DataFrame) -> pl.DataFrame:
-    """just simple returns (for now)"""
-    prev = pl.col('close').shift(1).over('ticker')
+    prev_close = pl.col('close').shift(1).over('ticker')
     return prices.with_columns(
-        (pl.col('close') / prev - 1).alias('simple_return'),
-        (pl.col('close') / prev).log().alias('log_return'),
+        simple_return = pl.col('close') / prev_close - 1,
+        log_return = (pl.col('close') / prev_close).log(),
     )
 
 def read_returns_sql():
