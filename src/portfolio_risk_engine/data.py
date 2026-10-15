@@ -21,6 +21,11 @@ def read_prices(db_path: str = DB_PATH) -> pl.DataFrame:
 
 
 def add_returns(prices: pl.DataFrame) -> pl.DataFrame:
+    """Add simple and log daily returns, computed separately for each ticker.
+
+    Expects rows sorted by ticker, then date (as read_prices returns them),
+    because shift(1) goes by row position. The first row of each ticker is null.
+    """
     prev_close = pl.col('close').shift(1).over('ticker')
     return prices.with_columns(
         simple_return = pl.col('close') / prev_close - 1,
