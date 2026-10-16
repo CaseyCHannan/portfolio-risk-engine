@@ -4,6 +4,8 @@ import polars as pl
 from portfolio_risk_engine.ingest import DB_PATH
 
 
+PRICES_SQL = "SELECT date, ticker, close FROM prices ORDER BY ticker, date"
+
 RETURNS_SQL = """
     SELECT
         date,
@@ -14,10 +16,9 @@ RETURNS_SQL = """
     ORDER BY ticker, date
 """
 
-PRICES_SQL = "SELECT date, ticker, close FROM prices ORDER BY ticker, date"
 
 def read_prices(db_path: str = DB_PATH) -> pl.DataFrame:
-    return duckdb.connect(db_path, read_only=True).sql('SELECT date, ticker, close FROM prices ORDER BY ticker, date').pl()
+    return duckdb.connect(db_path, read_only=True).sql(PRICES_SQL).pl()
 
 
 def add_returns(prices: pl.DataFrame) -> pl.DataFrame:
@@ -26,12 +27,12 @@ def add_returns(prices: pl.DataFrame) -> pl.DataFrame:
     Expects rows sorted by ticker, then date (as read_prices returns them),
     because shift(1) goes by row position. The first row of each ticker is null.
     """
-    prev_close = pl.col('close').shift(1).over('ticker')
+    prev_close = pl.col("close").shift(1).over("ticker")
     return prices.with_columns(
-        simple_return = pl.col('close') / prev_close - 1,
-        log_return = (pl.col('close') / prev_close).log(),
+        simple_return=pl.col("close") / prev_close - 1,
+        log_return=(pl.col("close") / prev_close).log(),
     )
 
-def read_returns_sql():
-    con = duckdb.connect(DB_PATH, read_only=True)
-    return con.sql(RETURNS_SQL).pl()
+
+def read_returns_sql(db_path: str = DB_PATH) -> pl.DataFrame:
+    return duckdb.connect(db_path, read_only=True).sql(RETURNS_SQL).pl()
