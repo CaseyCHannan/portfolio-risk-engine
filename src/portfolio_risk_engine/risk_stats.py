@@ -12,6 +12,7 @@ def historical_var(returns: pl.Series, confidence: float = 0.95) -> float:
 
 
 def historical_es(returns: pl.Series, confidence: float = 0.95) -> float:
+    """Use result of historical var to determine ES cutoff """
     cutoff = -historical_var(returns, confidence)
-    tail = returns.drop_nulls().filter(returns.drop_nulls() <= cutoff)
+    tail = returns.filter(returns <= cutoff)
     return -tail.mean()
