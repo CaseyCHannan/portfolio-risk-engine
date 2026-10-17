@@ -7,7 +7,7 @@ def add_rolling_vol(returns: pl.DataFrame, window: int = 60) -> pl.DataFrame:
 
 def historical_var(returns: pl.Series, confidence: float = 0.95) -> float:
     """Historical VaR as a positive loss. Drops nulls before computing."""
-    returns_var = returns.drop_nulls().quantile(1-confidence)
+    returns_var = returns.drop_nulls().quantile(1-confidence, interpolation='lower')
     return (-1)*returns_var
 
 
