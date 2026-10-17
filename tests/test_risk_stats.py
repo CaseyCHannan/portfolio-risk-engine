@@ -25,3 +25,7 @@ def test_historical_es_toy_example():
     result = historical_es(returns, confidence=0.90) 
     assert result == pytest.approx(.095) 
     assert result >= historical_var(returns, confidence=0.90)
+
+def test_historical_var_empty_series_raises():
+    with pytest.raises(ValueError):
+        historical_var(pl.Series([], dtype=pl.Float64))
