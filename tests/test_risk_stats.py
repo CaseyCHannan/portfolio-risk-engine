@@ -1,7 +1,7 @@
 import polars as pl
 import pytest
 
-from portfolio_risk_engine.risk_stats import add_rolling_vol
+from portfolio_risk_engine.risk_stats import add_rolling_vol, historical_var
 
 
 def test_rolling_vol_toy_example():
@@ -14,3 +14,8 @@ def test_rolling_vol_toy_example():
     assert out['rolling_vol'][0] is None
     assert out['rolling_vol'][1] == pytest.approx(expected)
     assert out['rolling_vol'][3] == pytest.approx(expected)
+
+def test_historical_var_toy_example():
+    returns = pl.Series([x / 100 for x in range(-10, 10)])  
+    result = historical_var(returns, confidence=0.95) 
+    assert result == pytest.approx(.10)    
