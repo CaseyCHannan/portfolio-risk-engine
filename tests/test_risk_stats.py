@@ -1,7 +1,13 @@
 import polars as pl
+import math
 import pytest
 
-from portfolio_risk_engine.risk_stats import add_rolling_vol, historical_var, historical_es
+from portfolio_risk_engine.risk_stats import (
+    add_rolling_vol, 
+    historical_var, 
+    historical_es, 
+    add_rolling_sharpe, 
+)
 
 
 def test_rolling_vol_toy_example():
@@ -29,6 +35,13 @@ def test_historical_es_toy_example():
 def test_historical_var_empty_series_raises():
     with pytest.raises(ValueError):
         historical_var(pl.Series([], dtype=pl.Float64))
+
 def test_historical_es_empty_series_raises():
     with pytest.raises(ValueError):
         historical_es(pl.Series([], dtype=pl.Float64))
+
+def test_rolling_sharpe_toy_example():
+    df = pl.DataFrame({"ticker": ["A", "A"], "log_return": [0.01, 0.03]})
+    out = add_rolling_sharpe(df, window=2)
+    assert out["rolling_sharpe"][0] is None
+    assert out["rolling_sharpe"][1] == pytest.approx(math.sqrt(504))
