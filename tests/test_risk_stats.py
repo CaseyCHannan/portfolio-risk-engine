@@ -57,3 +57,11 @@ def test_rolling_sharpe_does_not_cross_tickers():
     assert out["rolling_sharpe"][1] == pytest.approx(math.sqrt(504))
     assert out["rolling_sharpe"][2] is None
     assert out["rolling_sharpe"][3] == pytest.approx(math.sqrt(504))
+
+def test_historical_var_es_99():
+    returns = pl.Series([i / 100 for i in range(-50, 51)])  # 101   points to show that ES is greater than VaR (would be idential with only 100)
+    var = historical_var(returns, 0.99)
+    es = historical_es(returns, 0.99)
+    assert var == pytest.approx(0.49)
+    assert es == pytest.approx(0.495)
+    assert es >= var
