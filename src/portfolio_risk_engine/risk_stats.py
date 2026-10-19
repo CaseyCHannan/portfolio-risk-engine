@@ -25,3 +25,21 @@ def add_rolling_sharpe(df: pl.DataFrame, window: int = 60) -> pl.DataFrame:
     mean = pl.col("log_return").rolling_mean(window_size=window).over("ticker")
     std = pl.col("log_return").rolling_std(window_size=window).over("ticker")
     return df.with_columns((mean / std * 252**0.5).alias("rolling_sharpe"))
+
+def risk_by_ticker(
+    returns: pl.DataFrame,
+    confidence: float = 0.95,
+    column: str = "log_return",
+) -> pl.DataFrame:
+    """One row per ticker with historicalVaR and ES (losses are reported as positive numbers)."""
+    rows = []
+    for (ticker,), group in returns.group_by("ticker", maintain_order=True):
+        series = group[column]
+        rows.append(
+            {
+                "ticker": ticker,
+                "var": historical_var(series, confidence),
+                "es": historical_es(series, confidence),
+            }
+        )
+    return pl.DataFrame(rows)

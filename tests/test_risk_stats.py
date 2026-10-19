@@ -7,6 +7,7 @@ from portfolio_risk_engine.risk_stats import (
     historical_var, 
     historical_es, 
     add_rolling_sharpe, 
+    risk_by_ticker
 )
 
 
@@ -65,3 +66,13 @@ def test_historical_var_es_99():
     assert var == pytest.approx(0.49)
     assert es == pytest.approx(0.495)
     assert es >= var
+
+def test_risk_by_ticker_99():
+    # B is A scaled by 2, so VaR and ES double: 0.98 and 0.99.
+    a = [i / 100 for i in range(-50, 51)]
+    b = [2 * x for x in a]
+    df = pl.DataFrame({"ticker": ["A"] * 101 + ["B"] * 101, "log_return": a + b})
+    out = risk_by_ticker(df, 0.99)
+    assert out["ticker"].to_list() == ["A", "B"]
+    assert out["var"].to_list() == pytest.approx([0.49, 0.98])
+    assert out["es"].to_list() == pytest.approx([0.495, 0.99])
