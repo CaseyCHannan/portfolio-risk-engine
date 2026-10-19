@@ -1,12 +1,15 @@
 import polars as pl
 
+TRADING_DAYS = 252
 
 def add_rolling_vol(returns: pl.DataFrame, window: int = 60) -> pl.DataFrame:
     return returns.with_columns(
-        rolling_vol = pl.col('log_return').rolling_std(window_size=window).over('ticker') * 252**.5)
+        rolling_vol = pl.col('log_return').rolling_std(window_size=window).over('ticker') * TRADING_DAYS**.5)
 
 def historical_var(returns: pl.Series, confidence: float = 0.95) -> float:
     """Historical VaR as a positive loss. Drops nulls before computing."""
+    if not 0 < confidence < 1:
+     raise ValueError("confidence must be between 0 and 1")
     clean = returns.drop_nulls()
     if clean.is_empty():
         raise ValueError("returns is empty after dropping nulls")
@@ -24,7 +27,8 @@ def add_rolling_sharpe(df: pl.DataFrame, window: int = 60) -> pl.DataFrame:
     """sharpe ratio over 60 session window (initial RFR of zero)"""
     mean = pl.col("log_return").rolling_mean(window_size=window).over("ticker")
     std = pl.col("log_return").rolling_std(window_size=window).over("ticker")
-    return df.with_columns((mean / std * 252**0.5).alias("rolling_sharpe"))
+    return df.with_columns((mean / std * TRADING_DAYS**0.5).alias("rolling_sharpe"))
+
 
 def risk_by_ticker(
     returns: pl.DataFrame,

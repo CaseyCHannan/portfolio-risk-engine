@@ -76,3 +76,7 @@ def test_risk_by_ticker_99():
     assert out["ticker"].to_list() == ["A", "B"]
     assert out["var"].to_list() == pytest.approx([0.49, 0.98])
     assert out["es"].to_list() == pytest.approx([0.495, 0.99])
+
+def test_historical_var_bad_confidence_raises():
+    with pytest.raises(ValueError):
+        historical_var(pl.Series([0.01, -0.02, 0.03]), 95)   # test if mistakenly percentage is passed to function 
