@@ -45,3 +45,15 @@ def test_rolling_sharpe_toy_example():
     out = add_rolling_sharpe(df, window=2)
     assert out["rolling_sharpe"][0] is None
     assert out["rolling_sharpe"][1] == pytest.approx(math.sqrt(504))
+
+
+def test_rolling_sharpe_does_not_cross_tickers():
+    df = pl.DataFrame({
+        "ticker": ["A", "A", "B", "B"],
+        "log_return": [0.01, 0.03, 0.10, 0.30],
+    })
+    out = add_rolling_sharpe(df, window=2)
+    assert out["rolling_sharpe"][0] is None
+    assert out["rolling_sharpe"][1] == pytest.approx(math.sqrt(504))
+    assert out["rolling_sharpe"][2] is None
+    assert out["rolling_sharpe"][3] == pytest.approx(math.sqrt(504))
