@@ -3,6 +3,7 @@ import polars as pl
 TRADING_DAYS = 252
 
 def add_rolling_vol(returns: pl.DataFrame, window: int = 60) -> pl.DataFrame:
+    """Rolling annualized volatility of log returns, per ticker (sample std times sqrt(TRADING_DAYS))."""   
     return returns.with_columns(
         rolling_vol = pl.col('log_return').rolling_std(window_size=window).over('ticker') * TRADING_DAYS**.5)
 
