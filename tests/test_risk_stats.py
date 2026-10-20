@@ -80,3 +80,18 @@ def test_risk_by_ticker_99():
 def test_historical_var_bad_confidence_raises():
     with pytest.raises(ValueError):
         historical_var(pl.Series([0.01, -0.02, 0.03]), 95)   # test if mistakenly percentage is passed to function 
+
+def test_rolling_vol_does_not_cross_tickers():
+    df = pl.DataFrame({
+        'ticker': ['A', 'A', 'B', 'B'],
+        'log_return': [0.01, 0.03, 0.10, 0.30],
+    })
+    out = add_rolling_vol(df, window=2)
+    # A: mean 0.02, deviations ±0.01, sum of squares 0.0002, divided by n-1 = 1
+    expected_a = 0.0002 ** 0.5 * 252 ** 0.5
+    # B is A times 10, so its std is 10x: deviations ±0.10, sum of squares 0.02
+    expected_b = 0.02 ** 0.5 * 252 ** 0.5
+    assert out['rolling_vol'][0] is None
+    assert out['rolling_vol'][1] == pytest.approx(expected_a)
+    assert out['rolling_vol'][2] is None
+    assert out['rolling_vol'][3] == pytest.approx(expected_b)
