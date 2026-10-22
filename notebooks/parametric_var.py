@@ -1,15 +1,14 @@
 import polars as pl
-from portfolio_risk_engine.data import read_prices, add_returns
-from scipy.stats import norm
 
-# Z_99 =  -2.326 # left tail
+from portfolio_risk_engine.data import (
+    add_returns,
+    read_prices,
+)
 
-
-def parametric_var(returns, confidence=0.95):
-    mean = returns.mean()
-    std = returns.std()
-    z = norm.ppf(1 - confidence)
-    return -(mean + z * std)
+from portfolio_risk_engine.risk_stats import (
+    parametric_var,
+    risk_by_ticker,
+)
 
 
 prices = read_prices()
@@ -36,41 +35,11 @@ def parametric_var_by_ticker(returns, confidence=0.95, column="log_return"):
 result = parametric_var_by_ticker(returns, confidence=0.99)
 print(result)
 
-# def risk_by_ticker(
-#     returns: pl.DataFrame,
-#     confidence: float = 0.95,
-#     column: str = "log_return",
-# ) -> pl.DataFrame:
-#     """One row per ticker with historicalVaR and ES (losses are reported as positive numbers)."""
-#     rows = []
-#     for (ticker,), group in returns.group_by("ticker", maintain_order=True):
-#         series = group[column]
-#         rows.append(
-#             {
-#                 "ticker": ticker,
-#                 "var": historical_var(series, confidence),
-#                 "es": historical_es(series, confidence),
-#             }
-#         )
-#     return pl.DataFrame(rows)
 
-# spy_returns = (returns.filter(pl.col("ticker") == "SPY").select("log_return").drop_nulls())
-              
-# log_returns = spy_returns["log_return"]
-
-# mean = log_returns.mean()
-# std = log_returns.std()
-
-# print(mean)
-# print(std)
-
-# VaR = -(mean + z * std)
-
-# print(VaR)
-# print(z)
-              
-# def read_prices(db_path: str = DB_PATH) -> pl.DataFrame:
-#     return duckdb.connect(db_path, read_only=True).sql(PRICES_SQL).pl()
+historical = risk_by_ticker(returns, confidence=0.99)
+print(historical)
 
 
-# def add_returns(prices: pl.DataFrame) -> pl.DataFrame:
+
+comparison = historical.join(result, on="ticker", suffix="_parametric")
+print(comparison)
