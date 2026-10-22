@@ -26,6 +26,34 @@ log_returns = spy_returns["log_return"]
 spy_var = parametric_var(log_returns, confidence=0.99)
 print(spy_var)
 
+def parametric_var_by_ticker(returns, confidence=0.95, column="log_return"):
+    rows = []
+    for (ticker,), group in returns.group_by("ticker", maintain_order=True):
+        series = group[column].drop_nulls()  # the `column` of group, nulls dropped
+        rows.append({"ticker": ticker, "var": parametric_var(series, confidence)})
+    return pl.DataFrame(rows)
+
+result = parametric_var_by_ticker(returns, confidence=0.99)
+print(result)
+
+# def risk_by_ticker(
+#     returns: pl.DataFrame,
+#     confidence: float = 0.95,
+#     column: str = "log_return",
+# ) -> pl.DataFrame:
+#     """One row per ticker with historicalVaR and ES (losses are reported as positive numbers)."""
+#     rows = []
+#     for (ticker,), group in returns.group_by("ticker", maintain_order=True):
+#         series = group[column]
+#         rows.append(
+#             {
+#                 "ticker": ticker,
+#                 "var": historical_var(series, confidence),
+#                 "es": historical_es(series, confidence),
+#             }
+#         )
+#     return pl.DataFrame(rows)
+
 # spy_returns = (returns.filter(pl.col("ticker") == "SPY").select("log_return").drop_nulls())
               
 # log_returns = spy_returns["log_return"]
