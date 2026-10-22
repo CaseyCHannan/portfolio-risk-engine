@@ -7,7 +7,8 @@ from portfolio_risk_engine.risk_stats import (
     historical_var, 
     historical_es, 
     add_rolling_sharpe, 
-    risk_by_ticker
+    risk_by_ticker,
+    parametric_var
 )
 
 
@@ -95,3 +96,11 @@ def test_rolling_vol_does_not_cross_tickers():
     assert out['rolling_vol'][1] == pytest.approx(expected_a)
     assert out['rolling_vol'][2] is None
     assert out['rolling_vol'][3] == pytest.approx(expected_b)
+
+
+def test_parametric_var_95():
+    # returns 0.00 and 0.02: mean = 0.01, sample std = sqrt(0.0002) = 0.014142
+    # z at 5% = -1.644854, so cutoff return = 0.01 - 1.644854 * 0.014142 = -0.013262
+    # reported as a positive loss: 0.013262
+    returns = pl.Series([0.00, 0.02])
+    assert parametric_var(returns, confidence=0.95) == pytest.approx(0.013262, abs=1e-6)

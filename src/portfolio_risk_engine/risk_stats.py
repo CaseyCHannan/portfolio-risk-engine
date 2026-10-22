@@ -1,4 +1,5 @@
 import polars as pl
+from scipy.stats import norm
 
 TRADING_DAYS = 252
 
@@ -48,3 +49,14 @@ def risk_by_ticker(
             }
         )
     return pl.DataFrame(rows)
+
+
+def parametric_var(returns: pl.Series, confidence: float = 0.95) -> float:
+    """Parametric (normal) VaR as a positive loss, from the sample MEAN and STDEV. Drops nulls before computing."""
+    if not 0 < confidence < 1:
+        raise ValueError("confidence must be between 0 and 1")
+    clean = returns.drop_nulls()
+    if len(clean) < 2:
+        raise ValueError("need at least 2 observations to estimate a standard deviation")
+    z = norm.ppf(1 - confidence)
+    return float(-(clean.mean() + z * clean.std()))
