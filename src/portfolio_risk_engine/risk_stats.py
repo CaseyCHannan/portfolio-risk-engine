@@ -1,3 +1,4 @@
+import numpy as np
 import polars as pl
 from scipy.stats import norm
 
@@ -60,3 +61,19 @@ def parametric_var(returns: pl.Series, confidence: float = 0.95) -> float:
         raise ValueError("need at least 2 observations to estimate a standard deviation")
     z = norm.ppf(1 - confidence)
     return float(-(clean.mean() + z * clean.std()))
+
+def monte_carlo_var(
+    returns: pl.Series,
+    confidence: float = 0.95,
+    n_paths: int = 100_000,
+    seed: int | None = None,
+) -> float:
+    """Monte Carlo VaR as a positive loss: simulate one-day log returns from a normal fitted to the sample, take the lower-tail quantile."""
+    if not 0 < confidence < 1:
+        raise ValueError("confidence must be between 0 and 1")
+    clean = returns.drop_nulls()
+    if len(clean) < 2:
+        raise ValueError("need at least 2 observations to estimate a standard deviation")
+    rng = np.random.default_rng(seed)
+    simulated = rng.normal(loc=clean.mean(), scale=clean.std(), size=n_paths)
+    return float(-np.quantile(simulated, 1 - confidence, method="lower"))

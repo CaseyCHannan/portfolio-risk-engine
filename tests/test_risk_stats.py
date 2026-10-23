@@ -3,12 +3,13 @@ import math
 import pytest
 
 from portfolio_risk_engine.risk_stats import (
-    add_rolling_vol, 
-    historical_var, 
-    historical_es, 
-    add_rolling_sharpe, 
+   add_rolling_sharpe,
+    add_rolling_vol,
+    historical_es,
+    historical_var,
+    monte_carlo_var,
+    parametric_var,
     risk_by_ticker,
-    parametric_var
 )
 
 
@@ -97,10 +98,18 @@ def test_rolling_vol_does_not_cross_tickers():
     assert out['rolling_vol'][2] is None
     assert out['rolling_vol'][3] == pytest.approx(expected_b)
 
-
 def test_parametric_var_95():
     # returns 0.00 and 0.02: mean = 0.01, sample std = sqrt(0.0002) = 0.014142
     # z at 5% = -1.644854, so cutoff return = 0.01 - 1.644854 * 0.014142 = -0.013262
     # reported as a positive loss: 0.013262
     returns = pl.Series([0.00, 0.02])
     assert parametric_var(returns, confidence=0.95) == pytest.approx(0.013262, abs=1e-6)
+
+def test_monte_carlo_var_close_to_parametric():
+    # same toy series as the parametric test: mean 0.01, sample std 0.014142
+    # the simulation draws from that same normal, so it should land near the
+    # parametric answer 0.013262; the standard error of a 5% quantile from
+    # 100,000 draws is about 0.0001, so a tolerance of 0.0005 is roughly 5 standard errors
+    returns = pl.Series([0.00, 0.02])
+    result = monte_carlo_var(returns, confidence=0.95, n_paths=100_000, seed=23) #23 is the GOAT
+    assert result == pytest.approx(0.013262, abs=5e-4)
