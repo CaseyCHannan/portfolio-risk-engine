@@ -6,6 +6,7 @@ from portfolio_risk_engine.data import (
 )
 
 from portfolio_risk_engine.risk_stats import (
+    monte_carlo_var,
     parametric_var,
     risk_by_ticker,
 )
@@ -32,6 +33,13 @@ def parametric_var_by_ticker(returns, confidence=0.95, column="log_return"):
         rows.append({"ticker": ticker, "var": parametric_var(series, confidence)})
     return pl.DataFrame(rows)
 
+def monte_carlo_var_by_ticker(returns, confidence=0.95, column="log_return", n_paths=100_000, seed=23):
+    rows = []
+    for (ticker,), group in returns.group_by("ticker", maintain_order=True):
+        series = group[column].drop_nulls()
+        rows.append({"ticker": ticker, "var": monte_carlo_var(series, confidence, n_paths, seed)})
+    return pl.DataFrame(rows)
+
 result = parametric_var_by_ticker(returns, confidence=0.99)
 print(result)
 
@@ -39,7 +47,12 @@ print(result)
 historical = risk_by_ticker(returns, confidence=0.99)
 print(historical)
 
+monte_carlo = monte_carlo_var_by_ticker(returns, confidence=0.99)
+print(monte_carlo)
 
-
-comparison = historical.join(result, on="ticker", suffix="_parametric")
+comparison = (
+    historical.rename({"var": "var_historical", "es": "es_historical"})
+    .join(result.rename({"var": "var_parametric"}), on="ticker")
+    .join(monte_carlo.rename({"var": "var_monte_carlo"}), on="ticker")
+)
 print(comparison)
