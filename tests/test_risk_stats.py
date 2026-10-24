@@ -10,6 +10,7 @@ from portfolio_risk_engine.risk_stats import (
     monte_carlo_var,
     parametric_var,
     risk_by_ticker,
+    monte_carlo_var_multiday
 )
 
 
@@ -113,3 +114,12 @@ def test_monte_carlo_var_close_to_parametric():
     returns = pl.Series([0.00, 0.02])
     result = monte_carlo_var(returns, confidence=0.95, n_paths=100_000, seed=23) #23 is the GOAT
     assert result == pytest.approx(0.013262, abs=5e-4)
+
+def test_monte_carlo_var_multiday_scales_with_sqrt_time():
+    returns = pl.Series([-0.01, 0.03])
+    result = monte_carlo_var_multiday(returns, confidence=0.95, horizon=10, seed=23)
+    # daily mean 0.01, sample std sqrt(0.0008) = 0.028284
+    # 10 days: mean 0.1, std sqrt(10 * 0.0008) = 0.089443 (sqrt-time, not 10x)
+    # VaR = -(0.1 - 1.644854 * 0.089443) = 0.047122
+    # scaling std by 10 instead of sqrt(10) would give about 0.365
+    assert result == pytest.approx(0.047122, abs=3e-3)

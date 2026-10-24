@@ -77,3 +77,27 @@ def monte_carlo_var(
     rng = np.random.default_rng(seed)
     simulated = rng.normal(loc=clean.mean(), scale=clean.std(), size=n_paths)
     return float(-np.quantile(simulated, 1 - confidence, method="lower"))
+
+
+def monte_carlo_var_multiday(
+    returns: pl.Series,
+    confidence: float = 0.95,
+    horizon: int = 10,
+    n_paths: int = 100_000,
+    seed: int | None = None,
+) -> float:
+    
+    """Monte Carlo VaR over `horizon` days: sum each path, take the left-tail quantile."""
+    if not 0 < confidence < 1:
+        raise ValueError("confidence must be between 0 and 1")
+    if horizon < 1:
+        raise ValueError("horizon must be at least 1 day")
+    clean = returns.drop_nulls()
+    if len(clean) < 2:
+        raise ValueError("need at least 2 observations")
+    mean = clean.mean()
+    std = clean.std()
+    rng = np.random.default_rng(seed)
+    daily = rng.normal(loc=mean, scale=std, size=(n_paths, horizon))
+    total = daily.sum(axis=1)
+    return -float(np.quantile(total, 1 - confidence, method="lower"))
