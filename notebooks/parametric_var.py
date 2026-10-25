@@ -10,7 +10,7 @@ from portfolio_risk_engine.risk_stats import (
     monte_carlo_var_multiday,
     parametric_var,
     risk_by_ticker,
-   )
+)
 
 
 prices = read_prices()
