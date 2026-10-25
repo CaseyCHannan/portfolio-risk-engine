@@ -7,6 +7,7 @@ from portfolio_risk_engine.risk_stats import (
     add_rolling_vol,
     historical_es,
     historical_var,
+    historical_var_multiday,
     monte_carlo_var,
     parametric_var,
     risk_by_ticker,
@@ -123,3 +124,12 @@ def test_monte_carlo_var_multiday_scales_with_sqrt_time():
     # VaR = -(0.1 - 1.644854 * 0.089443) = 0.047122
     # scaling std by 10 instead of sqrt(10) would give about 0.365
     assert result == pytest.approx(0.047122, abs=3e-3)
+
+
+def test_historical_var_multiday_uses_rolling_sums():
+    # horizon 2 on 21 returns gives 20 two-day sums: -0.10, -0.04, then 18 of 0.02.
+    # 95% VaR is the worst of the 20 (position 0.05 * 19 = 0.95, 'lower'), so 0.10.
+    # Single-day VaR on the same series is 0.05, so only real summing passes.
+    returns = pl.Series([-0.05, -0.05] + [0.01] * 19)
+    result = historical_var_multiday(returns, confidence=0.95, horizon=2)
+    assert result == pytest.approx(0.10)

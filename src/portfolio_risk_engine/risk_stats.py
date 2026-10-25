@@ -101,3 +101,13 @@ def monte_carlo_var_multiday(
     daily = rng.normal(loc=mean, scale=std, size=(n_paths, horizon))
     total = daily.sum(axis=1)
     return -float(np.quantile(total, 1 - confidence, method="lower"))
+
+
+def historical_var_multiday(
+    returns: pl.Series, confidence: float = 0.95, horizon: int = 10
+) -> float:
+    """Historical VaR over `horizon` days, from overlapping rolling sums of daily log returns."""
+    if horizon < 1:
+        raise ValueError("horizon must be at least 1")
+    sums = returns.drop_nulls().rolling_sum(window_size=horizon).drop_nulls()
+    return historical_var(sums, confidence)
