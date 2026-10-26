@@ -6,6 +6,7 @@ from portfolio_risk_engine.data import (
 )
 
 from portfolio_risk_engine.risk_stats import (
+    historical_var_multiday,
     monte_carlo_var,
     monte_carlo_var_multiday,
     parametric_var,
@@ -67,3 +68,22 @@ print(comparison)
 
 monte_carlo_10day = monte_carlo_var_multiday_by_ticker(returns, confidence=0.99, horizon=10)
 print(monte_carlo_10day)
+
+def historical_var_multiday_by_ticker(returns, confidence=0.95, horizon=10, column="log_return"):
+    rows = []
+    for (ticker,), group in returns.group_by("ticker", maintain_order=True):
+        series = group[column].drop_nulls()
+        rows.append({"ticker": ticker, "var": historical_var_multiday(series, confidence, horizon)})
+    return pl.DataFrame(rows)
+
+historical_10day = historical_var_multiday_by_ticker(returns, confidence=0.99, horizon=10)
+print(historical_10day)
+
+comparison_10day = (
+    historical_10day.rename({"var": "var_historical_10d"})
+    .join(monte_carlo_10day.rename({"var": "var_monte_carlo_10d"}), on="ticker")
+    .with_columns(
+        (pl.col("var_monte_carlo_10d") / pl.col("var_historical_10d")).alias("mc_as_share_of_historical")
+    )
+)
+print(comparison_10day)
