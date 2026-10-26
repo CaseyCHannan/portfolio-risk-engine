@@ -1,3 +1,9 @@
+"""Compares historical, parametric and Monte Carlo VaR at 99% on the six-ticker basket.
+
+Prints 1-day and 10-day tables of daily log-return VaR, as positive losses.
+Run: uv run python notebooks/var_comparison.py
+"""
+
 import polars as pl
 
 from portfolio_risk_engine.data import (
@@ -17,16 +23,6 @@ from portfolio_risk_engine.risk_stats import (
 prices = read_prices()
 returns = add_returns(prices)
 
-spy_returns = (
-    returns
-    .filter(pl.col("ticker") == "SPY")
-    .select("log_return")
-    .drop_nulls()
-)
-log_returns = spy_returns["log_return"]
-
-spy_var = parametric_var(log_returns, confidence=0.99)
-print(spy_var)
 
 def parametric_var_by_ticker(returns, confidence=0.95, column="log_return"):
     rows = []
