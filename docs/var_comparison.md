@@ -54,3 +54,23 @@ If the returns are not normal, how wrong is a normal-based VaR?
 - **Monte Carlo and parametric agree.** Both assume the same normal, so Monte Carlo is the parametric answer plus some sampling noise. It sits about 0.36% above parametric in every row; section 3 shows why that is noise and not a bug.
 - **ES is well above VaR in every row**, by about 35% to 56%. Under a normal distribution at 99%, ES is only about 15% above VaR (ignoring the mean), so the real tails are heavier past the cutoff as well as at it.
 - **SPY has the largest gap** even though its VaR is below the single names. Diversification shrinks the size of the risk but not the shape of the tail.
+
+
+
+## 3. How many paths? The sampling noise in Monte Carlo VaR
+
+Section 2 showed Monte Carlo VaR sitting about 0.36% above parametric in every row. To see whether that is a bug or noise, I ran the Monte Carlo VaR for SPY at 99% fifty times (seeds 0 to 49) at three path counts and compared the spread of the estimates with the theoretical standard error of a simulated quantile, sqrt(p(1-p)/n) / f(q), where f is the normal density at the cutoff.
+
+| n_paths | Mean estimate | Std across seeds | Theory SE | Mean minus exact |
+| --- | --- | --- | --- | --- |
+| 1,000 | 0.025543 | 0.001459 | 0.001305 | +0.000335 |
+| 10,000 | 0.025173 | 0.000425 | 0.000413 | -0.000035 |
+| 100,000 | 0.025207 | 0.000128 | 0.000131 | -0.000002 |
+
+*Exact answer for this model (parametric VaR, SPY, 99%): 0.025208.*
+
+- **Error shrinks as 1/sqrt(n).** Each 10x increase in paths cuts the spread by about 3.3 to 3.4x (sqrt(10) is 3.16). To halve the error you need 4x the paths.
+- **The formula works.** The measured spread is within about 12% of the theoretical standard error at every size (closest at 100,000 paths, where it is within 3%).
+- **What that means for VaR.** Relative to the VaR, the standard error is about 5% at 1,000 paths, 1.6% at 10,000 and 0.5% at 100,000.
+- **No clear bias.** The average estimate is close to the exact answer at every size. The +0.000335 at 1,000 paths is about 1.6 standard errors of the 50-seed average, not clearly different from zero.
+- **The +0.36% offset is noise.** At 100,000 paths the standard error is about 0.5% of the VaR, so a 0.36% gap is under one standard error. It looks identical in every ticker because the fixed seed gives every ticker the same standard-normal draws, so one slightly unlucky tail quantile shows up in all six rows. It is one sampling error, not six independent confirmations.
