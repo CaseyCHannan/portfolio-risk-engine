@@ -35,3 +35,22 @@ Parametric and Monte Carlo VaR (as built here) both assume normal returns, so th
 
 Stage 2 will the obvious next question -> 
 If the returns are not normal, how wrong is a normal-based VaR?
+
+
+## 2. One-day comparison at 99%
+
+| Ticker | Historical VaR | Historical ES | Parametric VaR | Monte Carlo VaR | Parametric as % of historical |
+| --- | --- | --- | --- | --- | --- |
+| AAPL | 0.0497 | 0.0685 | 0.0411 | 0.0413 | 83% |
+| AGG | 0.0087 | 0.0131 | 0.0076 | 0.0076 | 87% |
+| JPM | 0.0455 | 0.0660 | 0.0386 | 0.0388 | 85% |
+| SPY | 0.0322 | 0.0471 | 0.0252 | 0.0253 | 78% |
+| VEA | 0.0297 | 0.0463 | 0.0252 | 0.0253 | 85% |
+| XOM | 0.0484 | 0.0651 | 0.0399 | 0.0400 | 83% |
+
+*Daily log-return VaR and ES at 99%, as positive losses. This Monte Carlo uses 100,000 paths and seed 23.*
+
+- **The normal model understates the historical 99% VaR for all six tickers**, by about 13% (AGG) to 22% (SPY). This is what the fat tails in section 1 predicted: a normal curve fitted to the same mean and standard deviation puts too little probability on extreme days.
+- **Monte Carlo and parametric agree.** Both assume the same normal, so Monte Carlo is the parametric answer plus some sampling noise. It sits about 0.36% above parametric in every row; section 3 shows why that is noise and not a bug.
+- **ES is well above VaR in every row**, by about 35% to 56%. Under a normal distribution at 99%, ES is only about 15% above VaR (ignoring the mean), so the real tails are heavier past the cutoff as well as at it.
+- **SPY has the largest gap** even though its VaR is below the single names. Diversification shrinks the size of the risk but not the shape of the tail.
