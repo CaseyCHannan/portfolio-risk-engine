@@ -94,9 +94,10 @@ uv run python notebooks/var_comparison.py
 
 I'm Casey, an instructor and former software engineer with a master's in
 statistics. I've been interested in risk for a long time, and working
-through actuarial science exams and CFA Level II brought that interest
-back. This project is where I'm turning it into tested code. Feedback,
-especially on methodology, is welcome via issues.
+through actuarial exams and CFA Level II brought that interest back. I'm
+currently preparing for CAS MAS-I in January 2027. This project is where
+I'm turning that interest into tested code. Feedback, especially on
+methodology, is welcome via issues.
 
 [LinkedIn](https://www.linkedin.com/in/caseyhannan)
 
