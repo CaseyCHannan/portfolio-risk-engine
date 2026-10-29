@@ -74,3 +74,23 @@ Section 2 showed Monte Carlo VaR sitting about 0.36% above parametric in every r
 - **What that means for VaR.** Relative to the VaR, the standard error is about 5% at 1,000 paths, 1.6% at 10,000 and 0.5% at 100,000.
 - **No clear bias.** The average estimate is close to the exact answer at every size. The +0.000335 at 1,000 paths is about 1.6 standard errors of the 50-seed average, not clearly different from zero.
 - **The +0.36% offset is noise.** At 100,000 paths the standard error is about 0.5% of the VaR, so a 0.36% gap is under one standard error. It looks identical in every ticker because the fixed seed gives every ticker the same standard-normal draws, so one slightly unlucky tail quantile shows up in all six rows. It is one sampling error, not six independent confirmations.
+
+## 4. Ten-day comparison at 99%
+
+Section 2 compared the methods over one day. Risk is often quoted over longer horizons, so I repeated the comparison at 10 days. The historical figure uses rolling 10-day sums of daily log returns; the Monte Carlo figure simulates 10 days of normal returns per path and sums them (100,000 paths, seed 23).
+
+| Ticker | Historical 10-day VaR | Monte Carlo 10-day VaR | Monte Carlo as % of historical | 1-day parametric as % of historical |
+| --- | --- | --- | --- | --- |
+| AAPL | 0.1375 | 0.1238 | 90% | 83% |
+| AGG | 0.0244 | 0.0235 | 96% | 87% |
+| JPM | 0.1381 | 0.1175 | 85% | 85% |
+| SPY | 0.0953 | 0.0761 | 80% | 78% |
+| VEA | 0.0959 | 0.0774 | 81% | 85% |
+| XOM | 0.1436 | 0.1235 | 86% | 83% |
+
+*10-day log-return VaR at 99%, as positive losses. The last column repeats the 1-day result from section 2 for comparison.*
+
+- **The normal model still understates historical VaR at 10 days**, by about 4% (AGG) to 20% (SPY).
+- **The gap does not grow with the horizon.** It narrows for AAPL, AGG and XOM, is about flat for JPM and SPY, and widens slightly for VEA. That fits the idea that sums of more days look more normal, but the pattern is not uniform and I have not tested the idea.
+- **Square-root-of-time roughly holds.** Historical 10-day VaR is 2.8 to 3.2 times the 1-day figure (square root of 10 is 3.16). Monte Carlo is 3.0 to 3.1 times, a bit under 3.16 because the positive average daily return grows linearly with time and pulls the loss down.
+- **Caveat: the historical windows overlap.** There are about 2,950 rolling 10-day windows, but only about 295 non-overlapping ones. The 99% historical figure rests on a few clustered episodes, so it is noisier than the number of windows suggests.
