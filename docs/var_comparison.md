@@ -1,5 +1,5 @@
 # VaR Methods Compared: Historical, Parametric and Monte Carlo
-### results from the first stage of my "risk-engine" project
+*Results from the first stage of my "risk-engine" project*
 
 ## 1. Setup and normality
 
@@ -33,9 +33,7 @@ Parametric and Monte Carlo VaR (as built here) both assume normal returns, so th
 - **Kurtosis is not riskiness:** AGG has the highest kurtosis but the smallest VaR in the basket. A fourth moment is dominated by a few extreme days, and AGG is calm on most days. (That its kurtosis comes from a handful of specific days has not yet been checked against the data.)
 - **The i.i.d. assumption is shaky:** daily returns show volatility clustering, so the Jarque-Bera test is best treated as a screen, not a precise test.
 
-Stage 2 will the obvious next question -> 
-If the returns are not normal, how wrong is a normal-based VaR?
-
+Stage 2 will be the obvious next question: if the returns are not normal, how wrong is a normal-based VaR?
 
 ## 2. One-day comparison at 99%
 
@@ -54,8 +52,6 @@ If the returns are not normal, how wrong is a normal-based VaR?
 - **Monte Carlo and parametric agree.** Both assume the same normal, so Monte Carlo is the parametric answer plus some sampling noise. It sits about 0.36% above parametric in every row; section 3 shows why that is noise and not a bug.
 - **ES is well above VaR in every row**, by about 35% to 56%. Under a normal distribution at 99%, ES is only about 15% above VaR (ignoring the mean), so the real tails are heavier past the cutoff as well as at it.
 - **SPY has the largest gap** even though its VaR is below the single names. Diversification shrinks the size of the risk but not the shape of the tail.
-
-
 
 ## 3. How many paths? The sampling noise in Monte Carlo VaR
 
