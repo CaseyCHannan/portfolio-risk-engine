@@ -26,3 +26,4 @@ for c in ("simple_return", "log_return"):
     both = joined.filter(pl.col(c).is_not_null() & pl.col(sql_c).is_not_null())
     max_diff = both.select((pl.col(c) - pl.col(sql_c)).abs().max()).item()
     print(f"{c}: null mismatches = {null_mismatch}, rows compared = {both.height}, max abs diff = {max_diff}")
+
