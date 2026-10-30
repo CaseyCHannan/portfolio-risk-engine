@@ -94,3 +94,25 @@ Section 2 compared the methods over one day. Risk is often quoted over longer ho
 - **The gap does not grow with the horizon.** It narrows for AAPL, AGG and XOM, is about flat for JPM and SPY, and widens slightly for VEA. That fits the idea that sums of more days look more normal, but the pattern is not uniform and I have not tested the idea.
 - **Square-root-of-time roughly holds.** Historical 10-day VaR is 2.8 to 3.2 times the 1-day figure (square root of 10 is 3.16). Monte Carlo is 3.0 to 3.1 times, a bit under 3.16 because the positive average daily return grows linearly with time and pulls the loss down.
 - **Caveat: the historical windows overlap.** There are about 2,950 rolling 10-day windows, but only about 295 non-overlapping ones. The 99% historical figure rests on a few clustered episodes, so it is noisier than the number of windows suggests.
+
+## 5. Takeaways and caveats
+
+**What the comparison shows**
+
+- **A normal-based VaR understates tail risk in this basket.** At 99% it falls short of the historical figure for all six tickers, by about 13% to 22% at one day and about 4% to 20% at ten days.
+- **Monte Carlo added nothing over parametric here.** Both assume the same normal, so they differ only by sampling noise, which shrinks as 1/sqrt(n). Simulation earns its keep when the payoff is nonlinear, the shocks are not normal, or there are many correlated assets, none of which applies yet.
+- **The gap is in the shape of the tails, not the scale.** The fitted normal matches the mean and standard deviation by construction, and it still misses the extreme days that the kurtosis figures in section 1 point to.
+- **Historical VaR makes no distributional assumption, but it depends entirely on the sample.** At 99%, about 1% of 2,959 returns, roughly 30 days, sit beyond the cutoff.
+
+**Caveats**
+
+- **One 11-year sample.** Every number comes from the same 2015 to 2026 history, and the comparison is in-sample. I did not backtest any method on data it had not seen.
+- **Single assets, no portfolio.** Each ticker is treated alone, so nothing here says how the methods compare for a portfolio or how correlations behave in a crash.
+- **Volatility clustering is ignored.** All three methods treat days as independent and identically distributed, which the data does not support.
+- **Overlapping 10-day windows.** The historical 10-day figures rest on about 295 independent blocks, not about 2,950 windows (section 4).
+- **Untested ideas.** I have not checked that AGG's high kurtosis comes from a handful of days, or why the gap narrows at 10 days for some tickers and not others.
+
+**What comes next**
+
+Phase 3 extends the Monte Carlo engine to several correlated assets with a Cholesky factorization, so the report can move from single-ticker VaR to portfolio VaR and ES with weights. A fat-tailed alternative such as a Student-t is a natural follow-up to the normal assumption.
+
