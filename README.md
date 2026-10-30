@@ -30,8 +30,8 @@ One-day 99% VaR, log returns, reported as a positive loss:
 | VEA | 0.0297 | 0.0252 | 0.0253 | 85% |
 | XOM | 0.0484 | 0.0399 | 0.0400 | 83% |
 
-The full write-up is in [`docs/var_comparison.md`](docs/var_comparison.md)
-(in progress). It also includes a study of Monte Carlo standard error: the
+The full write-up is in [`docs/var_comparison.md`](docs/var_comparison.md).
+It also includes a study of Monte Carlo standard error: the
 spread of the estimate falls by about 3.3x for every 10x increase in paths,
 matching the theoretical formula.
 
@@ -50,7 +50,7 @@ matching the theoretical formula.
 ## Status
 
 Phases 0 to 2 (data foundation, descriptive risk stats, VaR comparison) are
-built. The comparison report is being finished. Planned next:
+built. The comparison report is finished. Planned next:
 
 - Correlated multi-asset simulation and portfolio-level VaR/ES
 - Monte Carlo option pricing, validated against Black-Scholes
