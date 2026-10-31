@@ -36,3 +36,14 @@ def add_returns(prices: pl.DataFrame) -> pl.DataFrame:
 
 def read_returns_sql(db_path: str = DB_PATH) -> pl.DataFrame:
     return duckdb.connect(db_path, read_only=True).sql(RETURNS_SQL).pl()
+
+
+def returns_wide(returns: pl.DataFrame, column: str = "log_return") -> pl.DataFrame:
+    """Pivot long returns to one column per ticker and one row per date.
+
+    Tickers are ordered alphabetically by name, and the first date (null for
+    every ticker) is dropped, so every remaining row is complete.
+    """
+    wide = returns.pivot(on="ticker", index="date", values=column)
+    tickers = sorted(c for c in wide.columns if c != "date")
+    return wide.select("date", *tickers).sort("date").drop_nulls()

@@ -1,6 +1,9 @@
+from datetime import date
 import polars as pl
 import math
 import pytest
+
+from portfolio_risk_engine.data import returns_wide
 
 from portfolio_risk_engine.risk_stats import (
    add_rolling_sharpe,
@@ -133,3 +136,18 @@ def test_historical_var_multiday_uses_rolling_sums():
     returns = pl.Series([-0.05, -0.05] + [0.01] * 19)
     result = historical_var_multiday(returns, confidence=0.95, horizon=2)
     assert result == pytest.approx(0.10)
+
+
+def test_returns_wide_one_column_per_ticker_and_drops_null_dates():
+    long = pl.DataFrame(
+        {
+            "date": [date(2024, 1, 1), date(2024, 1, 2), date(2024, 1, 3)] * 2,
+            "ticker": ["B"] * 3 + ["A"] * 3,
+            "log_return": [None, 0.10, 0.20, None, 0.01, 0.02],
+        }
+    )
+    wide = returns_wide(long)
+    assert wide.columns == ["date", "A", "B"]
+    assert wide["date"].to_list() == [date(2024, 1, 2), date(2024, 1, 3)]
+    assert wide["A"].to_list() == [0.01, 0.02]
+    assert wide["B"].to_list() == [0.10, 0.20]
