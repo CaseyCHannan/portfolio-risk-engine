@@ -13,6 +13,7 @@ from portfolio_risk_engine.risk_stats import (
     historical_var,
     historical_var_multiday,
     monte_carlo_var,
+    parametric_portfolio_var,
     parametric_var,
     portfolio_variance,
     risk_by_ticker,
@@ -179,3 +180,31 @@ def test_portfolio_variance_two_assets():
 def test_portfolio_variance_wrong_size_raises():
     with pytest.raises(ValueError):
         portfolio_variance([0.5, 0.3, 0.2], [[0.01, 0.01], [0.01, 0.04]])
+
+
+def test_parametric_portfolio_var_95_two_assets():
+    # A = 0, 0.01, 0.02: mean 0.01, variance 0.0001. B = 2x A: mean 0.02,
+    # variance 0.0004, covariance 0.0002. Weights 0.5 / 0.5:
+    # mean 0.015; variance 0.25*0.0001 + 0.25*0.0004 + 2*0.25*0.0002 = 0.000225,
+    # std 0.015. VaR = -(0.015 - 1.644854 * 0.015) = 0.009673.
+    wide = pl.DataFrame(
+        {
+            "date": [date(2024, 1, 1), date(2024, 1, 2), date(2024, 1, 3)],
+            "A": [0.00, 0.01, 0.02],
+            "B": [0.00, 0.02, 0.04],
+        }
+    )
+    result = parametric_portfolio_var([0.5, 0.5], wide, confidence=0.95)
+    assert result == pytest.approx(0.009673, abs=1e-6)
+
+
+def test_parametric_portfolio_var_weights_must_sum_to_one():
+    wide = pl.DataFrame(
+        {
+            "date": [date(2024, 1, 1), date(2024, 1, 2), date(2024, 1, 3)],
+            "A": [0.00, 0.01, 0.02],
+            "B": [0.00, 0.02, 0.04],
+        }
+    )
+    with pytest.raises(ValueError):
+        parametric_portfolio_var([0.5, 0.6], wide)

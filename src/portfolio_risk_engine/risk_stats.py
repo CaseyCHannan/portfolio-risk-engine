@@ -128,3 +128,25 @@ def portfolio_variance(weights, cov) -> float:
     if cov.shape != (len(weights), len(weights)):
         raise ValueError("cov must be square and match the number of weights")
     return float(weights @ cov @ weights)
+
+
+def parametric_portfolio_var(weights, wide: pl.DataFrame, confidence: float = 0.95) -> float:
+    """Normal VaR of a fixed-weight portfolio, reported as a positive loss.
+
+    Weights follow the ticker column order of the wide frame and must sum to 1.
+    Treats the weighted sum of log returns as the portfolio return, which is an
+    approximation (it is exact for simple returns).
+    """
+    if not 0 < confidence < 1:
+        raise ValueError("confidence must be between 0 and 1")
+    weights = np.asarray(weights, dtype=float)
+    returns = wide.drop("date").to_numpy()
+    if returns.shape[1] != len(weights):
+        raise ValueError("need one weight per ticker column")
+    if not np.isclose(weights.sum(), 1.0):
+        raise ValueError("weights must sum to 1")
+    if returns.shape[0] < 2:
+        raise ValueError("need at least 2 observations")
+    mean = float(weights @ returns.mean(axis=0))
+    std = portfolio_variance(weights, covariance_matrix(wide)) ** 0.5
+    return -(mean + norm.ppf(1 - confidence) * std)
