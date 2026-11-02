@@ -6,13 +6,15 @@ import pytest
 from portfolio_risk_engine.data import returns_wide
 
 from portfolio_risk_engine.risk_stats import (
-   add_rolling_sharpe,
+    add_rolling_sharpe,
     add_rolling_vol,
+    covariance_matrix,
     historical_es,
     historical_var,
     historical_var_multiday,
     monte_carlo_var,
     parametric_var,
+    portfolio_variance,
     risk_by_ticker,
     monte_carlo_var_multiday
 )
@@ -151,3 +153,29 @@ def test_returns_wide_one_column_per_ticker_and_drops_null_dates():
     assert wide["date"].to_list() == [date(2024, 1, 2), date(2024, 1, 3)]
     assert wide["A"].to_list() == [0.01, 0.02]
     assert wide["B"].to_list() == [0.10, 0.20]
+
+
+def test_covariance_matrix_uses_n_minus_1():
+    # A deviates -0.01, 0, 0.01: variance 0.0002 / 2 = 0.0001. B is 2x A,
+    # so its variance is 0.0004 and the covariance is 0.0002.
+    wide = pl.DataFrame(
+        {
+            "date": [date(2024, 1, 1), date(2024, 1, 2), date(2024, 1, 3)],
+            "A": [0.01, 0.02, 0.03],
+            "B": [0.02, 0.04, 0.06],
+        }
+    )
+    result = covariance_matrix(wide)
+    assert result.flatten().tolist() == pytest.approx([0.0001, 0.0002, 0.0002, 0.0004])
+
+
+def test_portfolio_variance_two_assets():
+    # sigma 0.10 and 0.20, correlation 0.5, so the covariance is 0.01.
+    # 0.6^2 * 0.01 + 0.4^2 * 0.04 + 2 * 0.6 * 0.4 * 0.01 = 0.0036 + 0.0064 + 0.0048
+    cov = [[0.01, 0.01], [0.01, 0.04]]
+    assert portfolio_variance([0.6, 0.4], cov) == pytest.approx(0.0148)
+
+
+def test_portfolio_variance_wrong_size_raises():
+    with pytest.raises(ValueError):
+        portfolio_variance([0.5, 0.3, 0.2], [[0.01, 0.01], [0.01, 0.04]])

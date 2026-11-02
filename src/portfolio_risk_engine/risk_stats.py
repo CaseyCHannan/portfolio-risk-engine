@@ -111,3 +111,20 @@ def historical_var_multiday(
         raise ValueError("horizon must be at least 1")
     sums = returns.drop_nulls().rolling_sum(window_size=horizon).drop_nulls()
     return historical_var(sums, confidence)
+
+
+def covariance_matrix(wide: pl.DataFrame) -> np.ndarray:
+    """Sample covariance matrix (n - 1) of the ticker columns of a wide returns frame.
+
+    Ignores the date column; rows and columns follow the frame's column order.
+    """
+    return np.cov(wide.drop("date").to_numpy(), rowvar=False)
+
+
+def portfolio_variance(weights, cov) -> float:
+    """Variance of a portfolio return: W' Sigma W."""
+    weights = np.asarray(weights, dtype=float)
+    cov = np.asarray(cov, dtype=float)
+    if cov.shape != (len(weights), len(weights)):
+        raise ValueError("cov must be square and match the number of weights")
+    return float(weights @ cov @ weights)
