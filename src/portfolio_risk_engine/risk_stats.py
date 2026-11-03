@@ -150,3 +150,34 @@ def parametric_portfolio_var(weights, wide: pl.DataFrame, confidence: float = 0.
     mean = float(weights @ returns.mean(axis=0))
     std = portfolio_variance(weights, covariance_matrix(wide)) ** 0.5
     return -(mean + norm.ppf(1 - confidence) * std)
+
+
+def monte_carlo_portfolio_var(
+    weights,
+    wide: pl.DataFrame,
+    confidence: float = 0.95,
+    n_paths: int = 100_000,
+    seed=None,
+) -> float:
+    """Monte Carlo VaR of a fixed-weight portfolio, as a positive loss.
+
+    Fits a multivariate normal to the sample means and covariance, correlates
+    independent normal draws with the Cholesky factor, and takes the lower
+    quantile of the portfolio returns (the same convention as monte_carlo_var).
+    """
+    if not 0 < confidence < 1:
+        raise ValueError("confidence must be between 0 and 1")
+    weights = np.asarray(weights, dtype=float)
+    returns = wide.drop("date").to_numpy()
+    if returns.shape[1] != len(weights):
+        raise ValueError("need one weight per ticker column")
+    if not np.isclose(weights.sum(), 1.0):
+        raise ValueError("weights must sum to 1")
+    if returns.shape[0] < 2:
+        raise ValueError("need at least 2 observations")
+    mean = returns.mean(axis=0)
+    chol = np.linalg.cholesky(covariance_matrix(wide))
+    rng = np.random.default_rng(seed)
+    z = rng.standard_normal((n_paths, len(weights)))
+    simulated = (mean + z @ chol.T) @ weights
+    return -float(np.quantile(simulated, 1 - confidence, method="lower"))

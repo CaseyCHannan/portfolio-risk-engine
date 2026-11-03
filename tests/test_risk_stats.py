@@ -12,6 +12,7 @@ from portfolio_risk_engine.risk_stats import (
     historical_es,
     historical_var,
     historical_var_multiday,
+    monte_carlo_portfolio_var,
     monte_carlo_var,
     parametric_portfolio_var,
     parametric_var,
@@ -208,3 +209,20 @@ def test_parametric_portfolio_var_weights_must_sum_to_one():
     )
     with pytest.raises(ValueError):
         parametric_portfolio_var([0.5, 0.6], wide)
+
+
+def test_monte_carlo_portfolio_var_close_to_parametric():
+    # A: mean 0.01, variance 0.0000667. B: mean 0.015, variance 0.0001667.
+    # Covariance -0.0000333 (correlation -0.32), so the matrix is not singular.
+    # Weights 0.5 / 0.5: mean 0.0125, variance 0.0000417, std 0.006455.
+    # 99% VaR = -(0.0125 - 2.326348 * 0.006455) = 0.002516.
+    # Standard error at 100,000 paths is about 7.6e-5, so abs=4e-4 is about 5 SE.
+    wide = pl.DataFrame(
+        {
+            "date": [date(2024, 1, d) for d in (1, 2, 3, 4)],
+            "A": [0.00, 0.01, 0.02, 0.01],
+            "B": [0.02, 0.00, 0.01, 0.03],
+        }
+    )
+    result = monte_carlo_portfolio_var([0.5, 0.5], wide, confidence=0.99, seed=23)
+    assert result == pytest.approx(0.002516, abs=4e-4)
