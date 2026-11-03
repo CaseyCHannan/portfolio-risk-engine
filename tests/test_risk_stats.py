@@ -16,6 +16,7 @@ from portfolio_risk_engine.risk_stats import (
     monte_carlo_var,
     parametric_portfolio_var,
     parametric_var,
+    portfolio_returns, 
     portfolio_variance,
     risk_by_ticker,
     monte_carlo_var_multiday
@@ -226,3 +227,17 @@ def test_monte_carlo_portfolio_var_close_to_parametric():
     )
     result = monte_carlo_portfolio_var([0.5, 0.5], wide, confidence=0.99, seed=23)
     assert result == pytest.approx(0.002516, abs=4e-4)
+
+
+def test_portfolio_returns_applies_weights_per_row():
+    # 0.75 * A + 0.25 * B: 0.75*0.01 + 0.25*0.03 = 0.015; 0.75*0.02 + 0.25*0.04 = 0.025.
+    # Swapped weights would give 0.025 and 0.035, so uneven weights catch that mistake.
+    wide = pl.DataFrame(
+        {
+            "date": [date(2024, 1, 1), date(2024, 1, 2)],
+            "A": [0.01, 0.02],
+            "B": [0.03, 0.04],
+        }
+    )
+    result = portfolio_returns([0.75, 0.25], wide)
+    assert result.to_list() == pytest.approx([0.015, 0.025])

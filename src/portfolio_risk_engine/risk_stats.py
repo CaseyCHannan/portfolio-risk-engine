@@ -181,3 +181,17 @@ def monte_carlo_portfolio_var(
     z = rng.standard_normal((n_paths, len(weights)))
     simulated = (mean + z @ chol.T) @ weights
     return -float(np.quantile(simulated, 1 - confidence, method="lower"))
+
+
+def portfolio_returns(weights, wide: pl.DataFrame) -> pl.Series:
+    """Daily portfolio return series for fixed weights (the weights apply every day).
+
+    Weights follow the ticker column order of the wide frame and must sum to 1.
+    """
+    weights = np.asarray(weights, dtype=float)
+    returns = wide.drop("date").to_numpy()
+    if returns.shape[1] != len(weights):
+        raise ValueError("need one weight per ticker column")
+    if not np.isclose(weights.sum(), 1.0):
+        raise ValueError("weights must sum to 1")
+    return pl.Series("portfolio", returns @ weights)
