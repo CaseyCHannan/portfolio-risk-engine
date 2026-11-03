@@ -152,21 +152,12 @@ def parametric_portfolio_var(weights, wide: pl.DataFrame, confidence: float = 0.
     return -(mean + norm.ppf(1 - confidence) * std)
 
 
-def monte_carlo_portfolio_var(
-    weights,
-    wide: pl.DataFrame,
-    confidence: float = 0.95,
-    n_paths: int = 100_000,
-    seed=None,
-) -> float:
-    """Monte Carlo VaR of a fixed-weight portfolio, as a positive loss.
+def _simulate_portfolio_returns(weights, wide: pl.DataFrame, n_paths: int, seed) -> np.ndarray:
+    """Simulated portfolio returns from a multivariate normal fitted to the frame.
 
-    Fits a multivariate normal to the sample means and covariance, correlates
-    independent normal draws with the Cholesky factor, and takes the lower
-    quantile of the portfolio returns (the same convention as monte_carlo_var).
+    Correlates independent normal draws with the Cholesky factor of the sample
+    covariance matrix. Weights follow the ticker column order and must sum to 1.
     """
-    if not 0 < confidence < 1:
-        raise ValueError("confidence must be between 0 and 1")
     weights = np.asarray(weights, dtype=float)
     returns = wide.drop("date").to_numpy()
     if returns.shape[1] != len(weights):
@@ -179,7 +170,24 @@ def monte_carlo_portfolio_var(
     chol = np.linalg.cholesky(covariance_matrix(wide))
     rng = np.random.default_rng(seed)
     z = rng.standard_normal((n_paths, len(weights)))
-    simulated = (mean + z @ chol.T) @ weights
+    return (mean + z @ chol.T) @ weights
+
+
+def monte_carlo_portfolio_var(
+    weights,
+    wide: pl.DataFrame,
+    confidence: float = 0.95,
+    n_paths: int = 100_000,
+    seed=None,
+) -> float:
+    """Monte Carlo VaR of a fixed-weight portfolio, as a positive loss.
+
+    Takes the lower quantile of the simulated portfolio returns (the same
+    convention as monte_carlo_var).
+    """
+    if not 0 < confidence < 1:
+        raise ValueError("confidence must be between 0 and 1")
+    simulated = _simulate_portfolio_returns(weights, wide, n_paths, seed)
     return -float(np.quantile(simulated, 1 - confidence, method="lower"))
 
 
@@ -195,3 +203,39 @@ def portfolio_returns(weights, wide: pl.DataFrame) -> pl.Series:
     if not np.isclose(weights.sum(), 1.0):
         raise ValueError("weights must sum to 1")
     return pl.Series("portfolio", returns @ weights)
+
+
+def portfolio_risk(
+    weights,
+    wide: pl.DataFrame,
+    confidence: float = 0.95,
+    n_paths: int = 100_000,
+    seed=None,
+) -> pl.DataFrame:
+    """VaR and ES of a fixed-weight portfolio by three methods, as positive losses.
+
+    Returns one row per method (historical, parametric, monte_carlo) with columns
+    method, var and es. Weights follow the ticker column order of the wide frame.
+    """
+    series = portfolio_returns(weights, wide)
+    historical = (historical_var(series, confidence), historical_es(series, confidence))
+
+    mean = float(series.mean())
+    std = float(series.std())
+    z = norm.ppf(1 - confidence)
+    parametric = (
+        parametric_portfolio_var(weights, wide, confidence),
+        -mean + std * norm.pdf(z) / (1 - confidence),
+    )
+
+    simulated = _simulate_portfolio_returns(weights, wide, n_paths, seed)
+    cutoff = np.quantile(simulated, 1 - confidence, method="lower")
+    monte_carlo = (-float(cutoff), -float(simulated[simulated <= cutoff].mean()))
+
+    return pl.DataFrame(
+        {
+            "method": ["historical", "parametric", "monte_carlo"],
+            "var": [historical[0], parametric[0], monte_carlo[0]],
+            "es": [historical[1], parametric[1], monte_carlo[1]],
+        }
+    )

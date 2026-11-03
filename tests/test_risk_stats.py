@@ -17,6 +17,7 @@ from portfolio_risk_engine.risk_stats import (
     parametric_portfolio_var,
     parametric_var,
     portfolio_returns, 
+    portfolio_risk,
     portfolio_variance,
     risk_by_ticker,
     monte_carlo_var_multiday
@@ -241,3 +242,43 @@ def test_portfolio_returns_applies_weights_per_row():
     )
     result = portfolio_returns([0.75, 0.25], wide)
     assert result.to_list() == pytest.approx([0.015, 0.025])
+
+
+def _toy_wide():
+    # Weights 0.75/0.25 give portfolio returns -0.04, -0.02, 0.00, 0.01, 0.03.
+    return pl.DataFrame(
+        {
+            "date": ["d1", "d2", "d3", "d4", "d5"],
+            "A": [-0.04, 0.00, 0.04, -0.02, 0.02],
+            "B": [-0.04, -0.08, -0.12, 0.10, 0.06],
+        }
+    )
+
+
+def test_portfolio_risk_uneven_weights_three_methods():
+    result = portfolio_risk([0.75, 0.25], _toy_wide(), confidence=0.6, seed=23)
+    rows = {row["method"]: row for row in result.iter_rows(named=True)}
+
+    # Historical: worst 2 of 5 returns are -0.04 and -0.02, so VaR 0.02, ES (0.04 + 0.02) / 2 = 0.03.
+    assert rows["historical"]["var"] == pytest.approx(0.02)
+    assert rows["historical"]["es"] == pytest.approx(0.03)
+
+    # Parametric: mean -0.004, sample std sqrt(0.00073) = 0.027019, z = -0.253347.
+    assert rows["parametric"]["var"] == pytest.approx(0.010845, abs=1e-6)
+    assert rows["parametric"]["es"] == pytest.approx(0.030096, abs=1e-6)
+
+    # Monte Carlo: about 5 standard errors for VaR; ES has a larger error, so a looser bound.
+    assert rows["monte_carlo"]["var"] == pytest.approx(0.010845, abs=5e-4)
+    assert rows["monte_carlo"]["es"] == pytest.approx(0.030096, abs=1e-3)
+
+    for row in rows.values():
+        assert row["es"] >= row["var"]
+
+
+def test_portfolio_risk_monte_carlo_matches_monte_carlo_portfolio_var():
+    wide = _toy_wide()
+    result = portfolio_risk([0.75, 0.25], wide, confidence=0.6, seed=23)
+    mc_var = result.filter(pl.col("method") == "monte_carlo")["var"][0]
+    assert mc_var == pytest.approx(
+        monte_carlo_portfolio_var([0.75, 0.25], wide, confidence=0.6, seed=23)
+    )
