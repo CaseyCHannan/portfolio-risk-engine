@@ -54,4 +54,3 @@ Correlation changes the scale of the risk, but not the shape of the tail. A norm
 
 - Look at the dates of AGG's worst days, and test whether stocks and bonds share their worst days.
 - Add a Student-t column as a fourth method.
-
