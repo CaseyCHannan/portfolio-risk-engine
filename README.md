@@ -35,6 +35,12 @@ It also includes a study of Monte Carlo standard error: the
 spread of the estimate falls by about 3.3x for every 10x increase in paths,
 matching the theoretical formula.
 
+Phase 3 applies the same three methods to a weighted portfolio, with
+correlation modeled through the covariance matrix and a Cholesky factor. For an
+equal-weight basket of the six tickers, the normal model understates the
+historical 99% VaR by about 19% and the 99% ES by about 39%. The write-up is in
+[`docs/portfolio_var.md`](docs/portfolio_var.md).
+
 ## What's implemented
 
 - Historical VaR and ES, plus a per-ticker wrapper
@@ -45,14 +51,17 @@ matching the theoretical formula.
 - Normality check (skew, excess kurtosis, Jarque-Bera) on daily returns
 - Returns cross-checked against an independent SQL implementation
   (`LAG()` for returns, a window-frame query for rolling volatility)
-- 15 pytest tests, mostly against small datasets with hand-computed answers
+- Portfolio VaR and ES for arbitrary weights by three methods (historical,
+  parametric, correlated Monte Carlo via Cholesky), through `portfolio_risk`
+- 25 pytest tests, mostly against small datasets with hand-computed answers
 
 ## Status
 
 Phases 0 to 2 (data foundation, descriptive risk stats, VaR comparison) are
-built. The comparison report is finished. Planned next:
+built, and so is most of Phase 3 (portfolio-level VaR and ES). The comparison
+reports are finished. Planned next:
 
-- Correlated multi-asset simulation and portfolio-level VaR/ES
+- Finish Phase 3: a Student-t method and a check of AGG's worst days
 - Monte Carlo option pricing, validated against Black-Scholes
 - CI, linting, and packaging
 
