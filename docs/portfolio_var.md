@@ -22,7 +22,7 @@ I extended the single-ticker comparison to a weighted portfolio of the same six 
 
 - The portfolio's parametric VaR is 76% of the weighted average of the six single-ticker VaRs. Correlations below 1 cut the scale of the risk.
 - It did not thin the tails. The portfolio's excess kurtosis is 15.85 (skew −0.76), higher than SPY's 14.53 and every single name except AGG.
-- A possible reason is a shared market factor: stocks and bonds may fall together on the worst days. **I have not tested this.** Checking the dates of AGG's worst days would be a first test.
+- A possible reason is a shared market factor: stocks and bonds may fall together on the worst days. I listed each ticker's five worst days (`notebooks/worst_days.py`). March 12, 2020 is on all six lists, AGG included, and 20 of the 30 slots are days in March 2020. Four of AGG's five worst days are in March 2020, so its high kurtosis looks like a few days and not steady tail risk. This fits a shared factor, but it is only five days per ticker. **I have not measured how much of the kurtosis those days explain.**
 
 ## A second basket: AGG-heavy
 
@@ -52,5 +52,4 @@ Correlation changes the scale of the risk, but not the shape of the tail. A norm
 
 ## Next
 
-- Look at the dates of AGG's worst days, and test whether stocks and bonds share their worst days.
 - Add a Student-t column as a fourth method.
