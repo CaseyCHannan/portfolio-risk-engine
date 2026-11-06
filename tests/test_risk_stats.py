@@ -1,4 +1,5 @@
 from datetime import date
+import numpy as np
 import polars as pl
 import math
 import pytest
@@ -308,3 +309,24 @@ def test_student_t_risk_bad_inputs_raise():
         student_t_risk(0, 0, 4, 0.99)  # scale must be positive
     with pytest.raises(ValueError):
         student_t_risk(0, 1, 4, 99)  # confidence, not a percentage
+
+
+def test_portfolio_risk_student_t_recovers_known_t():
+    # Returns drawn from a t with 4 degrees of freedom (loc 0.0005, scale 0.01). Asset B has
+    # weight 0 and only keeps the covariance matrix invertible for the simulation.
+    rng = np.random.default_rng(23)
+    n = 5000
+    a = 0.0005 + 0.01 * rng.standard_t(4, size=n)
+    b = rng.normal(0, 0.01, size=n)
+    wide = pl.DataFrame({"date": list(range(n)), "A": a, "B": b})
+
+    result = portfolio_risk([1.0, 0.0], wide, confidence=0.99, n_paths=1000, seed=23)
+    rows = {row["method"]: row for row in result.iter_rows(named=True)}
+
+    # The fit lands within a few percent of the true t (sampling error with 5,000 points).
+    true_var, true_es = student_t_risk(0.0005, 0.01, 4, 0.99)
+    assert rows["student_t"]["var"] == pytest.approx(true_var, rel=0.06)
+    assert rows["student_t"]["es"] == pytest.approx(true_es, rel=0.08)
+
+    # The normal row understates the ES by about a quarter on the same data.
+    assert rows["parametric"]["es"] < 0.8 * true_es

@@ -214,10 +214,12 @@ def portfolio_risk(
     n_paths: int = 100_000,
     seed=None,
 ) -> pl.DataFrame:
-    """VaR and ES of a fixed-weight portfolio by three methods, as positive losses.
+    """VaR and ES of a fixed-weight portfolio by four methods, as positive losses.
 
-    Returns one row per method (historical, parametric, monte_carlo) with columns
-    method, var and es. Weights follow the ticker column order of the wide frame.
+    Returns one row per method (historical, parametric, monte_carlo, student_t) with
+    columns method, var and es. Weights follow the ticker column order of the wide frame.
+    The student_t row fits a Student-t (location, scale, degrees of freedom) to the
+    portfolio return series by maximum likelihood.
     """
     series = portfolio_returns(weights, wide)
     historical = (historical_var(series, confidence), historical_es(series, confidence))
@@ -234,11 +236,14 @@ def portfolio_risk(
     cutoff = np.quantile(simulated, 1 - confidence, method="lower")
     monte_carlo = (-float(cutoff), -float(simulated[simulated <= cutoff].mean()))
 
+    dof, loc, scale = student_t.fit(series.to_numpy())
+    student = student_t_risk(loc, scale, dof, confidence)
+
     return pl.DataFrame(
         {
-            "method": ["historical", "parametric", "monte_carlo"],
-            "var": [historical[0], parametric[0], monte_carlo[0]],
-            "es": [historical[1], parametric[1], monte_carlo[1]],
+            "method": ["historical", "parametric", "monte_carlo", "student_t"],
+            "var": [historical[0], parametric[0], monte_carlo[0], student[0]],
+            "es": [historical[1], parametric[1], monte_carlo[1], student[1]],
         }
     )
 
