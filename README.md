@@ -35,10 +35,12 @@ It also includes a study of Monte Carlo standard error: the
 spread of the estimate falls by about 3.3x for every 10x increase in paths,
 matching the theoretical formula.
 
-Phase 3 applies the same three methods to a weighted portfolio, with
-correlation modeled through the covariance matrix and a Cholesky factor. For an
-equal-weight basket of the six tickers, the normal model understates the
-historical 99% VaR by about 19% and the 99% ES by about 39%. The write-up is in
+Phase 3 applies the same methods to a weighted portfolio, with correlation
+modeled through the covariance matrix and a Cholesky factor, and adds a fitted
+Student-t as a fourth. For an equal-weight basket of the six tickers, the
+normal model understates the historical 99% VaR by about 19% and the 99% ES by
+about 39%; the Student-t lands within about 6% of both. On an AGG-heavy basket
+the Student-t fit is unstable and overshoots. The write-up is in
 [`docs/portfolio_var.md`](docs/portfolio_var.md).
 
 ## What's implemented
@@ -51,17 +53,17 @@ historical 99% VaR by about 19% and the 99% ES by about 39%. The write-up is in
 - Normality check (skew, excess kurtosis, Jarque-Bera) on daily returns
 - Returns cross-checked against an independent SQL implementation
   (`LAG()` for returns, a window-frame query for rolling volatility)
-- Portfolio VaR and ES for arbitrary weights by three methods (historical,
-  parametric, correlated Monte Carlo via Cholesky), through `portfolio_risk`
-- 25 pytest tests, mostly against small datasets with hand-computed answers
+- Portfolio VaR and ES for arbitrary weights by four methods (historical,
+  parametric, correlated Monte Carlo via Cholesky, fitted Student-t), through
+  `portfolio_risk`
+- 29 pytest tests, mostly against small datasets with hand-computed answers
 
 ## Status
 
-Phases 0 to 2 (data foundation, descriptive risk stats, VaR comparison) are
-built, and so is most of Phase 3 (portfolio-level VaR and ES). The comparison
-reports are finished. Planned next:
+Phases 0 to 3 (data foundation, descriptive risk stats, VaR comparison,
+portfolio-level VaR and ES) are built. The comparison reports are finished.
+Planned next:
 
-- Finish Phase 3: a Student-t method and a check of AGG's worst days
 - Monte Carlo option pricing, validated against Black-Scholes
 - CI, linting, and packaging
 
@@ -109,4 +111,3 @@ I'm turning that interest into tested code. Feedback, especially on
 methodology, is welcome via issues.
 
 [LinkedIn](https://www.linkedin.com/in/caseyhannan)
-
