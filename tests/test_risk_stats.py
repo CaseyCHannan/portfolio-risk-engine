@@ -14,13 +14,14 @@ from portfolio_risk_engine.risk_stats import (
     historical_var_multiday,
     monte_carlo_portfolio_var,
     monte_carlo_var,
+    monte_carlo_var_multiday,
     parametric_portfolio_var,
     parametric_var,
     portfolio_returns, 
     portfolio_risk,
     portfolio_variance,
     risk_by_ticker,
-    monte_carlo_var_multiday
+    student_t_risk,
 )
 
 
@@ -282,3 +283,28 @@ def test_portfolio_risk_monte_carlo_matches_monte_carlo_portfolio_var():
     assert mc_var == pytest.approx(
         monte_carlo_portfolio_var([0.75, 0.25], wide, confidence=0.6, seed=23)
     )
+
+
+def test_student_t_risk_df4_99():
+    # df = 4: the 1% t quantile is -3.746947, its density there is 0.0086819 and
+    # (df + q**2) / (df - 1) = 6.0132, so the standard ES is 0.0086819 / 0.01 * 6.0132 = 5.2206.
+    # The non-zero loc catches a sign slip on the mean term.
+    var, es = student_t_risk(0.001, 0.01, 4, 0.99)
+    assert var == pytest.approx(0.036469, abs=1e-6)  # -(0.001 + 0.01 * -3.746947)
+    assert es == pytest.approx(0.051206, abs=1e-6)  # -0.001 + 0.01 * 5.2206
+
+
+def test_student_t_risk_large_df_matches_normal():
+    # As df grows the t approaches the normal: 99% VaR 2.326, ES 2.665 (the normal figures).
+    var, es = student_t_risk(0, 1, 1e7, 0.99)
+    assert var == pytest.approx(2.326348, abs=1e-4)
+    assert es == pytest.approx(2.665214, abs=1e-4)
+
+
+def test_student_t_risk_bad_inputs_raise():
+    with pytest.raises(ValueError):
+        student_t_risk(0, 1, 1, 0.99)  # ES needs df > 1
+    with pytest.raises(ValueError):
+        student_t_risk(0, 0, 4, 0.99)  # scale must be positive
+    with pytest.raises(ValueError):
+        student_t_risk(0, 1, 4, 99)  # confidence, not a percentage

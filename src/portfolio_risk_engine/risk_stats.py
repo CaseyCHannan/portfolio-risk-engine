@@ -1,6 +1,7 @@
 import numpy as np
 import polars as pl
 from scipy.stats import norm
+from scipy.stats import t as student_t
 
 TRADING_DAYS = 252
 
@@ -61,6 +62,7 @@ def parametric_var(returns: pl.Series, confidence: float = 0.95) -> float:
         raise ValueError("need at least 2 observations to estimate a standard deviation")
     z = norm.ppf(1 - confidence)
     return float(-(clean.mean() + z * clean.std()))
+
 
 def monte_carlo_var(
     returns: pl.Series,
@@ -239,3 +241,23 @@ def portfolio_risk(
             "es": [historical[1], parametric[1], monte_carlo[1]],
         }
     )
+
+
+def student_t_risk(
+    loc: float, scale: float, df: float, confidence: float = 0.95
+) -> tuple[float, float]:
+    """Student-t VaR and ES as positive losses, from location, scale and degrees of freedom.
+
+    The return is loc + (scale * T), where T is a standard t variable. ES needs df > 1.
+    """
+    if not 0 < confidence < 1:
+        raise ValueError("confidence must be between 0 and 1")
+    if scale <= 0:
+        raise ValueError("scale must be positive")
+    if df <= 1:
+        raise ValueError("df must be greater than 1")
+    tail = 1 - confidence
+    q = student_t.ppf(tail, df)
+    var = -(loc + scale * q)
+    es = -loc + scale * student_t.pdf(q, df) / tail * (df + q**2) / (df - 1)
+    return float(var), float(es)
